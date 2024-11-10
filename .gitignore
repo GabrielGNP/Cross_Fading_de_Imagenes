@@ -1,4 +1,6 @@
-/Cross_Fading de Imágenes_Secuencial/output_frames
-/Cross_Fading de Imágenes_Secuencial/x64/Debug/output_frames
+/Cross_Fading_Secuencial/Video_Output
+/Cross_Fading_Secuencial/Images_Output
+/Cross_Fading_Secuencial/x64/Debug/Video_Output
+/Cross_Fading_Secuencial/x64/Debug/Images_Output
 .vs
 opencv

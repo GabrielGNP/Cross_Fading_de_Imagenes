@@ -26,7 +26,7 @@ namespace fs = std::filesystem;
 // Parámetros
 int fps = 24; //imagenes por segundo
 int duration = 4; // segundos de duración del video
-int frames = fps * duration; // cantidad de frames totales
+
 std::string outputDir = "output_frames"; // directorio de salida
 
 void SetColor(int textColor, int bgColor) {
@@ -45,6 +45,20 @@ void SetColor(int textColor, int bgColor) {
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	// Establecer el color
 	SetConsoleTextAttribute(hConsole, (bgColor << 4) | textColor);
+}
+void gotoxy(int x, int y) {
+	// Obtenemos el handle de la consola
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	// Establecemos la posición del cursor
+	COORD coord;
+	coord.X = x;
+	coord.Y = y;
+
+	// Verificamos si se puede mover el cursor
+	if (!SetConsoleCursorPosition(hConsole, coord)) {
+		std::cerr << "Error al mover el cursor" << std::endl;
+	}
 }
 
 std::string GetPathProgram() {
@@ -80,12 +94,54 @@ void showImage(Mat img) {
 	destroyAllWindows();
 }
 
-int generatedVideo(Mat imgInit, Mat imgEnd) {
+int GenerateImages(Mat imgInit, Mat imgEnd) {
+	int frames = fps * duration; // cantidad de frames totales
+	system("cls");
+	for (int i = 0; i < frames; ++i) {
+		float P = static_cast<float>(i) / frames;
+		Mat result = imgInit.clone();
+		/*addWeighted(imgInit, 1 - P, imgEnd, P, 0.0, result);*/ // función para crear las imagenes.
 
+		 // Aplicar cross-fading manualmente en cada píxel
+		for (int y = 0; y < imgInit.rows; ++y) {
+			for (int x = 0; x < imgInit.cols; ++x) {
+				Vec3b pixelInit = imgInit.at<Vec3b>(y, x);
+				Vec3b pixelEnd = imgEnd.at<Vec3b>(y, x);
+				Vec3b& pixelResult = result.at<Vec3b>(y, x);
+
+				pixelResult[0] = static_cast<uchar>(pixelInit[0] * (1 - P) + pixelEnd[0] * P); // Canal azul
+				pixelResult[1] = static_cast<uchar>(pixelInit[1] * (1 - P) + pixelEnd[1] * P); // Canal verde
+				pixelResult[2] = static_cast<uchar>(pixelInit[2] * (1 - P) + pixelEnd[2] * P); // Canal rojo
+			}
+		}
+
+		std::string fileName = "Images_output/frame_" + std::to_string(i) + ".jpg";
+		imwrite(fileName, result);
+		system("cls");
+		std::cout << "<";
+		for (int t = 0; t < 100; t++) {
+			if ((t * 100) / frames <= (i * 100) / frames)
+			{
+				std::cout << "=";
+			}
+			else {
+				std::cout << " ";
+			}
+		}
+		std::cout << ">" << (i * 100) / frames;
+
+	}
+	std::cout << std::endl;
+
+	return 0;
+}
+
+int GeneratedVideo(Mat imgInit, Mat imgEnd) {
+	int frames = fps * duration; // cantidad de frames totales
 	Size frameSize = imgInit.size();
 
 	// Inicializar el VideoWriter
-	VideoWriter video("output_frames/output_video.avi", VideoWriter::fourcc('M', 'J', 'P', 'G'), fps, frameSize);
+	VideoWriter video("Video_Output/output_video.avi", VideoWriter::fourcc('M', 'J', 'P', 'G'), fps, frameSize);
 
 	if (!video.isOpened()) {
 		std::cerr << "Error al abrir el archivo de video" << std::endl;
@@ -105,15 +161,12 @@ int generatedVideo(Mat imgInit, Mat imgEnd) {
 				Vec3b pixelEnd = imgEnd.at<Vec3b>(y, x);
 				Vec3b& pixelResult = result.at<Vec3b>(y, x);
 
-				pixelResult[0] = static_cast<uchar>(pixelInit[0] * P + pixelEnd[0] * (1 - P)); // Canal azul
-				pixelResult[1] = static_cast<uchar>(pixelInit[1] * P + pixelEnd[1] * (1 - P)); // Canal verde
-				pixelResult[2] = static_cast<uchar>(pixelInit[2] * P + pixelEnd[2] * (1 - P)); // Canal rojo
+				pixelResult[0] = static_cast<uchar>(pixelInit[0] * (1 - P) + pixelEnd[0] * P); // Canal azul
+				pixelResult[1] = static_cast<uchar>(pixelInit[1] * (1 - P) + pixelEnd[1] * P); // Canal verde
+				pixelResult[2] = static_cast<uchar>(pixelInit[2] * (1 - P) + pixelEnd[2] * P); // Canal rojo
 			}
 		}
 
-
-		std::string fileName = "output_frames/frame_" + std::to_string(i) + ".jpg";
-		/*imwrite(fileName, result);*/
 		video.write(result);
 		system("cls");
 		std::cout << "<";
@@ -137,38 +190,85 @@ int generatedVideo(Mat imgInit, Mat imgEnd) {
 	return 0;
 }
 
+void CreateImages() {
+	CreateFolder("Images_Output");
 
-void menu() {
-	std::cout << "cambiar";
+	Mat imgInit = imread(pathProgram + "/Images/test1_a.jpg");
+	Mat imgEnd = imread(pathProgram + "/Images/test1_b.jpg");
 
+	if (GenerateImages(imgInit, imgEnd) == 0)
+	{
+		std::cout << "Imagenes creadas" << endl << endl;
+		std::cout << "            Presione cualquier tecla par acontinuar..." << endl;
+		_getch();
+		system("cls");
+	}
 
+	else
+		std::cout << "Hubo un error al crear las imagenes";
+}
+void CreateVideo() {
+	int stop;
+	CreateFolder("Video_Output");
+	system("cls");
+	
+	Mat imgInit = imread(pathProgram + "/Images/test1_a.jpg");
+	Mat imgEnd = imread(pathProgram + "/Images/test1_b.jpg");
 
+	if (GeneratedVideo(imgInit, imgEnd) == 0)
+	{
+		std::cout << "Video creado" << endl << endl;
+		std::cout << "            Presione cualquier tecla par acontinuar..." << endl;
+		_getch();
+		system("cls");
+	}		
+	else
+		std::cout << "no se pudo crear el video";
 }
 
-int main()
-{
-	int posMenu = 0;
-	vector<String> options = { "Seleccionar imagenes","Cambiar fps", "Cambiar duracion", "Crear imagenes", "Crear video", "Salir" };
-
-	while (true) {
-		system("cls");
-		for (int op = 0; op < options.size(); op++) {
-			if (op == posMenu)
-			{
-				SetColor(0, 8);
-				std::cout << "> " << options[op] << std::endl;
-			}
-			else
-			{
-				SetColor(7, 0);
-				std::cout << "  " << options[op] << std::endl;
-			}
-			SetColor(7, 0);
+void PrintOptions(int posMenu, vector<String> options) {
+	for (int op = 0; op < options.size(); op++) {
+		if (op == posMenu)
+		{
+			SetColor(0, 8);
+			std::cout << "> " << options[op] << endl;
 		}
-		cout << endl;
-		cout << "fps: "; SetColor(2, 0); cout << fps << endl; SetColor(7, 0);
-		cout << "duracion: "; SetColor(2, 0); cout << duration << endl; SetColor(7, 0);
+		else
+		{
+			SetColor(7, 0);
+			std::cout << "  " << options[op];
+			switch (op)
+			{
+			case 1:
+				SetColor(7, 0);
+				std::cout << " => <";
+				SetColor(8, 0);
+				std::cout << fps;
+				SetColor(7, 0);
+				std::cout << ">" << std::endl;
+				break;
 
+			case 2:
+				SetColor(7, 0);
+				std::cout << " => <";
+				SetColor(8, 0);
+				std::cout << duration;
+				SetColor(7, 0);
+				std::cout << ">" << std::endl;
+				break;
+			default:
+				std::cout << std::endl;
+				break;
+			}
+		}
+		SetColor(7, 0);
+	}
+}
+
+void menu(int posMenu, vector<String> options) {
+	bool exit = false;
+	PrintOptions(posMenu, options);
+	while (!exit) {
 		int key = _getch();  // Captura el primer carácter
 
 		if (key == 224) {  // Si es una secuencia de tecla especial (teclas de dirección)
@@ -177,11 +277,136 @@ int main()
 			switch (key) {
 			case 72:  // Flecha arriba
 				if (posMenu > 0)
+				{
 					posMenu--;
+					gotoxy(0, posMenu);
+					SetColor(0, 8);
+					std::cout << "> " << options[posMenu];
+					SetColor(7, 0);
+					switch (posMenu)
+					{
+					case 1:
+						std::cout << " => <";
+						SetColor(2, 0);
+						std::cout << fps;
+						SetColor(7, 0);
+						std::cout << ">" << std::endl;
+						break;
+
+					case 2:
+						std::cout << " => <";
+						SetColor(2, 0);
+						std::cout << duration;
+						SetColor(7, 0);
+						std::cout << ">" << std::endl;
+						break;
+					default:
+						std::cout << std::endl;
+						break;
+					}
+					gotoxy(0, posMenu + 1);
+					SetColor(7, 0);
+					std::cout << "  " << options[posMenu + 1];
+					switch (posMenu + 1)
+					{
+					case 1:
+						SetColor(7, 0);
+						std::cout << " => <";
+						SetColor(8, 0);
+						std::cout << fps;
+						SetColor(7, 0);
+						std::cout << ">" << std::endl;
+						break;
+
+					case 2:
+						SetColor(7, 0);
+						std::cout << " => <";
+						SetColor(8, 0);
+						std::cout << duration;
+						SetColor(7, 0);
+						std::cout << ">" << std::endl;
+						break;
+					default:
+						std::cout << std::endl;
+						break;
+					}
+				}
+				else {
+					SetColor(7, 0);
+					gotoxy(0, posMenu);
+					std::cout << "  " << options[0];
+					posMenu = options.size() - 1;
+					SetColor(0, 8);
+					gotoxy(0, posMenu);
+					std::cout << "  " << options[options.size() - 1];
+				}
 				break;
 			case 80:  // Flecha abajo
-				if (posMenu < options.size() - 1)
+				if (posMenu < options.size() - 1) {
 					posMenu++;
+					gotoxy(0, posMenu);
+					SetColor(0, 8);
+					std::cout << "> " << options[posMenu];
+					SetColor(7, 0);
+					switch (posMenu)
+					{
+					case 1:
+						std::cout << " => <";
+						SetColor(2, 0);
+						std::cout << fps;
+						SetColor(7, 0);
+						std::cout << ">" << std::endl;
+						break;
+
+					case 2:
+						std::cout << " => <";
+						SetColor(2, 0);
+						std::cout << duration;
+						SetColor(7, 0);
+						std::cout << ">" << std::endl;
+						break;
+					default:
+						std::cout << std::endl;
+						break;
+					}
+					gotoxy(0, posMenu - 1);
+					SetColor(7, 0);
+					std::cout << "  " << options[posMenu - 1];
+					switch (posMenu - 1)
+					{
+					case 1:
+						SetColor(7, 0);
+						std::cout << " => <";
+						SetColor(8, 0);
+						std::cout << fps;
+						SetColor(7, 0);
+						std::cout << ">" << std::endl;
+						break;
+
+					case 2:
+						SetColor(7, 0);
+						std::cout << " => <";
+						SetColor(8, 0);
+						std::cout << duration;
+						SetColor(7, 0);
+						std::cout << ">" << std::endl;
+						break;
+					default:
+						std::cout << std::endl;
+						break;
+					}
+				}
+				else {
+					SetColor(7, 0);
+					gotoxy(0, posMenu);
+					std::cout << "  " << options[options.size() - 1];
+					posMenu = 0;
+					SetColor(0, 8);
+					gotoxy(0, posMenu);
+					std::cout << "  " << options[0];
+					posMenu = 0;
+				}
+
 				break;
 			case 75:  // Flecha izquierda
 			{
@@ -189,10 +414,28 @@ int main()
 				{
 				case 1:
 					fps--;
+					gotoxy(0, posMenu);
+					SetColor(0, 8);
+					std::cout << "> " << options[posMenu];
+					SetColor(7, 0);
+					std::cout << " => <";
+					SetColor(2, 0);
+					std::cout << fps;
+					SetColor(7, 0);
+					std::cout << ">" << std::endl;
 					break;
 
 				case 2:
 					duration--;
+					gotoxy(0, posMenu);
+					SetColor(0, 8);
+					std::cout << "> " << options[posMenu];
+					SetColor(7, 0);
+					std::cout << " => <";
+					SetColor(2, 0);
+					std::cout << duration;
+					SetColor(7, 0);
+					std::cout << ">" << std::endl;
 					break;
 				}
 				break;
@@ -203,10 +446,28 @@ int main()
 				{
 				case 1:
 					fps++;
+					gotoxy(0, posMenu);
+					SetColor(0, 8);
+					std::cout << "> " << options[posMenu];
+					SetColor(7, 0);
+					std::cout << " => <";
+					SetColor(2, 0);
+					std::cout << fps;
+					SetColor(7, 0);
+					std::cout << ">" << std::endl;
 					break;
 
 				case 2:
 					duration++;
+					gotoxy(0, posMenu);
+					SetColor(0, 8);
+					std::cout << "> " << options[posMenu];
+					SetColor(7, 0);
+					std::cout << " => <";
+					SetColor(2, 0);
+					std::cout << duration;
+					SetColor(7, 0);
+					std::cout << ">" << std::endl;
 					break;
 				}
 				break;
@@ -215,19 +476,45 @@ int main()
 		}
 		else if (key == 27) {  // 27 es la tecla ESC
 			std::cout << "Escape presionado. Saliendo..." << std::endl;
-			break;
+			exit = true;
+		}
+		else if (key == 13) {
+			switch (posMenu) {
+			case 0:
+				break;
+			case 3:
+				CreateImages();
+				posMenu = 0;
+				PrintOptions(posMenu, options);
+				break;
+			case 4:
+				CreateVideo();
+				posMenu = 0;
+				PrintOptions(posMenu, options);
+				break;
+			case 5:
+				SetColor(7, 0);
+				exit = true;
+				break;
+			}
 		}
 	}
 
-	/*CreateFolder(outputDir);
 
-	Mat imgInit = imread(pathProgram +"/test1_a.jpg");
-	Mat imgEnd = imread(pathProgram + "/test1_b.jpg");
 
-	if (generatedVideo(imgInit, imgEnd) == 0)
-		std::cout << "Vidéo creado" << endl;
-	else
-		std::cout << "no se pudo crear el video";*/
+}
+
+int main()
+{
+	
+	int posMenu = 0;
+	vector<String> options = { "Seleccionar imagenes","Cambiar fps", "Cambiar duracion", "Crear imagenes", "Crear video", "Salir" };
+
+	system("cls");
+	menu(posMenu, options);
+	std::cout << endl;
+
+
 
 
 	return 0;
