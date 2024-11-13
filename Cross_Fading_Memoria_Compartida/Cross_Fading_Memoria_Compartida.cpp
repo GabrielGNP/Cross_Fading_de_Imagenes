@@ -2,7 +2,7 @@
 #include <omp.h>
 
 #include <filesystem> // Para crear carpetas
-#include <windows.h> // Para obtener el Path del programa
+#include <windows.h> // Para para el goto y obtener el Path del programa
 #include <conio.h>  // Para getch() en Windows
 
 // Para openCV
