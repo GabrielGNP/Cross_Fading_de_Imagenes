@@ -80,13 +80,13 @@ int main(int argc, char* argv[])
 			
 			unsigned char* imgInit = stbi_load(nameImageInit.c_str(), &widthInit, &heightInit, &channelsInit, 0);
 			if (imgInit == nullptr) {
-				cerr << "Error cargando la imagen\n";
+				cerr << "Error cargando la imagen inicial\n";
 				return -1;
 			}
 			
 			unsigned char* imgEnd = stbi_load(nameImageEnd.c_str(), &widthEnd, &heightEnd, &channelsEnd, 0);
 			if (imgEnd == nullptr) {
-				cerr << "Error cargando la imagen\n";
+				cerr << "Error cargando la imagen final\n";
 				return -1;
 			}
 
@@ -209,19 +209,27 @@ int main(int argc, char* argv[])
 
 	}
 	else {
-		return 0;
+
+		std::string pathProgram = GetPathProgram();
+		string nameInputFolder = "Images";
+		string nameOutputImages = "Output_Images";
+		CreateFolder(nameOutputImages);
+
+		string nameImageInit = pathProgram + "/" + nameInputFolder + "/test1_a.jpg";
+		string nameImageEnd = pathProgram + "/" + nameInputFolder + "/test1_b.jpg";
+		
 		int widthInit = 0, heightInit = 0, channelsInit = 0;
 		int widthEnd = 0, heightEnd = 0, channelsEnd = 0;
 
-		unsigned char* imgInit = stbi_load("test1_a.jpg", &widthInit, &heightInit, &channelsInit, 0);
+		unsigned char* imgInit = stbi_load(nameImageInit.c_str(), &widthInit, &heightInit, &channelsInit, 0);
 		if (imgInit == nullptr) {
-			cerr << "Error cargando la imagen\n";
+			cerr << "Error cargando la imagen inicial\n";
 			return -1;
 		}
 
-		unsigned char* imgEnd = stbi_load("test1_b.jpg", &widthEnd, &heightEnd, &channelsEnd, 0);
+		unsigned char* imgEnd = stbi_load(nameImageEnd.c_str(), &widthEnd, &heightEnd, &channelsEnd, 0);
 		if (imgEnd == nullptr) {
-			cerr << "Error cargando la imagen\n";
+			cerr << "Error cargando la imagen final\n";
 			return -1;
 		}
 
@@ -239,7 +247,7 @@ int main(int argc, char* argv[])
 				imgResult[i + 1] = ((int)imgInit[i + 1] * (1 - P) + (int)imgEnd[i + 1] * P); // Canal verde
 				imgResult[i + 2] = ((int)imgInit[i + 2] * (1 - P) + (int)imgEnd[i + 2] * P); // Canal azul
 			}
-			string name = "images_Output/output_" + std::to_string(f) + ".png";
+			string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(f) + ".png";
 			createImage(name, widthInit, heightInit, channelsInit, imgResult);
 		}
 		stbi_image_free(imgInit); // Libera la memoria cuando termines
