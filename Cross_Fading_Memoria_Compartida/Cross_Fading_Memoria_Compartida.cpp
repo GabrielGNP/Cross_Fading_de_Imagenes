@@ -134,7 +134,7 @@ int GenerateImages(Mat imgInit, Mat imgEnd) {
 					pixelResult[2] = static_cast<uchar>(pixelInit[2] * (1 - P) + pixelEnd[2] * P); // Canal rojo
 				}
 			}
-			std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string((int)(P * 100)) + ".jpg";
+			std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string((int)i) + ".jpg";
 			imwrite(fileName, result);
 			if (int(P) % 2 == 0) {
 				gotoxy(int(P * 50) + 1, id_proceso+1);
