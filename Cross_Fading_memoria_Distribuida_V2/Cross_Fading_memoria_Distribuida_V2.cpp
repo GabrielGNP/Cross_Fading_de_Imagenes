@@ -12,6 +12,7 @@
 #include <iostream>
 #include <sstream>
 #include <windows.h> // Para para el goto y obtener el Path del programa
+#include <conio.h>  // Para getch() en Windows
 
 #include <mpi.h>
 
@@ -156,6 +157,7 @@ int main(int argc, char* argv[])
 				MPI_Send(&bucle, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
 			}
 			/*cout << "==== finalizó todos los procesos esclavos ====" << endl;*/
+			cout << endl;
 			auto end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
 			auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
 			auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
@@ -167,6 +169,9 @@ int main(int argc, char* argv[])
 				stbi_write_png(name.c_str(), widthInit, heightInit, channelsInit, vecImgs[i], widthInit * channelsInit);
 			}
 			vecImgs.clear();
+			cout << " ======= Imagenes generadas completamente =======" << endl;
+			cout << " presione cualquier tecla para salir..." << endl;
+			_getch();
 			stbi_image_free(imgInit); // Libera la memoria cuando termines
 			stbi_image_free(imgEnd);
 			
@@ -259,6 +264,7 @@ int main(int argc, char* argv[])
 			createImage(name, widthInit, heightInit, channelsInit, imgResult);*/
 			vecImgs.push_back(imgResult);
 		}
+		cout << endl;
 		auto end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
 		auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
 		auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
@@ -268,6 +274,9 @@ int main(int argc, char* argv[])
 			string name = "images_Output/output_" + std::to_string(i) + ".png";
 			stbi_write_png(name.c_str(), widthInit, heightInit, channelsInit, vecImgs[i], widthInit * channelsInit);
 		}
+		cout << " ======= Imagenes generadas completamente =======" << endl;
+		cout << " presione cualquier tecla para salir..." << endl;
+		_getch();
 		vecImgs.clear();
 		stbi_image_free(imgInit); // Libera la memoria cuando termines
 		stbi_image_free(imgEnd);
