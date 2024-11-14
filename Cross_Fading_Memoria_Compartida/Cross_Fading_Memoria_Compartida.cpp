@@ -125,10 +125,10 @@ int GenerateImages(Mat imgInit, Mat imgEnd) {
 		vector<Mat> listImages;
 		listImages.resize(frames);
 
-		//if (id_proceso = 0) {
-		//	start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
-		//}
-//#pragma omp barrier  // Los procesos esperan a que todos lleguen
+		if (id_proceso == 0) {
+			start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
+		}
+#pragma omp barrier  // Los procesos esperan a que todos lleguen
 		/*for (float P = id_proceso * iteration; P * 100 < frames; P += iteration * cantidadProcesos)*/
 
 		for (int i = id_proceso; i < frames; i = i + cantidadProcesos)
@@ -145,7 +145,7 @@ int GenerateImages(Mat imgInit, Mat imgEnd) {
 					pixelResult[2] = static_cast<uchar>(pixelInit[2] * (1 - P) + pixelEnd[2] * P); // Canal rojo
 				}
 			}
-			/*std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string((int)(P * 100)) + ".jpg";
+			/*std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string((int)i) + ".jpg";
 			imwrite(fileName, result);*/
 			listImages[i] = result;
 			if (int(P) % 2 == 0) {
@@ -155,19 +155,19 @@ int GenerateImages(Mat imgInit, Mat imgEnd) {
 			/*gotoxy(53+1,id_proceso+1);
 			std::cout << "%" << int(P);*/
 		}
-//		if (id_proceso = 0) {
-//			end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
-//			auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
-//			auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
-//			cout << "Tiempo tardado en generar las imagenes: " << durationms.count() << "ms" << endl;
-//			cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
-//		}
-//#pragma omp barrier  // Los procesos esperan a que todos lleguen
+		if (id_proceso == 0) {
+			end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
+			auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+			auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+			gotoxy(0, 4);
+			cout << "Tiempo tardado en generar las imagenes: " << durationms.count() << "ms" << endl;
+			cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
+		}
+#pragma omp barrier  // Los procesos esperan a que todos lleguen
 
 		for (int i = id_proceso; i < frames; i = i + cantidadProcesos)
 		{
-			float P = i * iteration;
-			std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string((int)(P * 100)) + ".jpg";
+			std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string((int)i) + ".jpg";
 			imwrite(fileName, listImages[i]);
 		}
 	}
@@ -205,7 +205,7 @@ int GenerateVideo(Mat imgInit, Mat imgEnd) {
 		std::cout << ">";
 		/*gotoxy(53, id_proceso + 1);
 		std::cout << "%" << int(0 * 100);*/
-		if (id_proceso = 0) {
+		if (id_proceso == 0) {
 			start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
 		}
 #pragma omp barrier  // Los procesos esperan a que todos lleguen
@@ -232,10 +232,11 @@ int GenerateVideo(Mat imgInit, Mat imgEnd) {
 			/*gotoxy(53 + 1, id_proceso + 1);*/
 			/*cout << "%" << int(P);*/
 		}
-		if (id_proceso = 0) {
+		if (id_proceso == 0) {
 			end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
 			auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
 			auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+			gotoxy(0, 4);
 			cout << "Tiempo tardado en generar las imagenes: " << durationms.count() << "ms" << endl;
 			cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
 		}
