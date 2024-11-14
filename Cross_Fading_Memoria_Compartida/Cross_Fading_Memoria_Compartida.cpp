@@ -5,6 +5,8 @@
 #include <windows.h> // Para para el goto y obtener el Path del programa
 #include <conio.h>  // Para getch() en Windows
 
+#include <chrono> // Para medir el tiempo
+
 // Para openCV
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -109,6 +111,8 @@ int GenerateImages(Mat imgInit, Mat imgEnd) {
 	int frames = fps * duration;
 	float iteration = 1.0f / frames;
 
+	auto start = std::chrono::high_resolution_clock::now(), end = std::chrono::high_resolution_clock::now();
+
 # pragma omp parallel num_threads(cantidadProcesos)
 	{
 		int id_proceso = omp_get_thread_num();
@@ -118,8 +122,15 @@ int GenerateImages(Mat imgInit, Mat imgEnd) {
 		std::cout << ">";
 		/*gotoxy(53, id_proceso+1);
 		std::cout << "%" << int(0 * 100);*/
-		
+		vector<Mat> listImages;
+		listImages.resize(frames);
+
+		//if (id_proceso = 0) {
+		//	start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
+		//}
+//#pragma omp barrier  // Los procesos esperan a que todos lleguen
 		/*for (float P = id_proceso * iteration; P * 100 < frames; P += iteration * cantidadProcesos)*/
+
 		for (int i = id_proceso; i < frames; i = i + cantidadProcesos)
 		{
 			float P = i * iteration;
@@ -134,14 +145,30 @@ int GenerateImages(Mat imgInit, Mat imgEnd) {
 					pixelResult[2] = static_cast<uchar>(pixelInit[2] * (1 - P) + pixelEnd[2] * P); // Canal rojo
 				}
 			}
-			std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string((int)(P * 100)) + ".jpg";
-			imwrite(fileName, result);
+			/*std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string((int)(P * 100)) + ".jpg";
+			imwrite(fileName, result);*/
+			listImages[i] = result;
 			if (int(P) % 2 == 0) {
 				gotoxy(int(P * 50) + 1, id_proceso+1);
 				std::cout << "=";
 			}
 			/*gotoxy(53+1,id_proceso+1);
 			std::cout << "%" << int(P);*/
+		}
+//		if (id_proceso = 0) {
+//			end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
+//			auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+//			auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+//			cout << "Tiempo tardado en generar las imagenes: " << durationms.count() << "ms" << endl;
+//			cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
+//		}
+//#pragma omp barrier  // Los procesos esperan a que todos lleguen
+
+		for (int i = id_proceso; i < frames; i = i + cantidadProcesos)
+		{
+			float P = i * iteration;
+			std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string((int)(P * 100)) + ".jpg";
+			imwrite(fileName, listImages[i]);
 		}
 	}
 	gotoxy(0, cantidadProcesos+2);
@@ -153,7 +180,9 @@ int GenerateVideo(Mat imgInit, Mat imgEnd) {
 
 	int frames = fps * duration;
 	float iteration = 1.0f / frames;
-
+	
+	auto start = std::chrono::high_resolution_clock::now(), end = std::chrono::high_resolution_clock::now();
+	
 	vector<Mat>listImgs;
 	listImgs.resize(frames);
 	Size frameSize = imgInit.size();
@@ -176,7 +205,10 @@ int GenerateVideo(Mat imgInit, Mat imgEnd) {
 		std::cout << ">";
 		/*gotoxy(53, id_proceso + 1);
 		std::cout << "%" << int(0 * 100);*/
-
+		if (id_proceso = 0) {
+			start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
+		}
+#pragma omp barrier  // Los procesos esperan a que todos lleguen
 		/*for (float P = id_proceso * iteration; P * 100 < frames; P += iteration * cantidadProcesos)*/
 		for (int i = id_proceso; i < frames; i = i+cantidadProcesos)
 		{
@@ -200,6 +232,14 @@ int GenerateVideo(Mat imgInit, Mat imgEnd) {
 			/*gotoxy(53 + 1, id_proceso + 1);*/
 			/*cout << "%" << int(P);*/
 		}
+		if (id_proceso = 0) {
+			end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
+			auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+			auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+			cout << "Tiempo tardado en generar las imagenes: " << durationms.count() << "ms" << endl;
+			cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
+		}
+#pragma omp barrier  // Los procesos esperan a que todos lleguen
 
 	}
 

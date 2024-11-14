@@ -16,6 +16,8 @@
 
 #include <filesystem> // Para crear carpetas
 
+#include <chrono> // Para medir el tiempo
+
 using namespace cv;
 using namespace std;
 namespace fs = std::filesystem;
@@ -29,8 +31,8 @@ int duration = 4; // segundos de duración del video
 string videoOutputFolderName = "Video_Output";
 string imagesOutputFolderName = "Images_Output";
 string imagesInputFolderName = "Images";
-string nameImgInit = "test1_a.jpg";
-string nameImgEnd = "test1_b.jpg";
+string nameImgInit = "test1_a(x800).jpg";
+string nameImgEnd = "test1_b(x800).jpg";
 
 
 //std::string outputDir = "output_frames"; // directorio de salida
@@ -102,13 +104,15 @@ void showImage(Mat img) {
 
 int GenerateImages(Mat imgInit, Mat imgEnd) {
 	int frames = fps * duration; // cantidad de frames totales
+	vector<Mat> listImages;
 	system("cls");
 	gotoxy(0, 1);
 	std::cout << "<";
 	gotoxy(51, 1);
 	std::cout << ">";
 	gotoxy(24, 2);
-	cout << "%" << int(0 * 100);
+	cout << int(0 * 100) << "%";
+	auto start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
 	for (int i = 0; i < frames; ++i) {
 		float P = static_cast<float>(i) / frames;
 		Mat result = imgInit.clone();
@@ -127,16 +131,34 @@ int GenerateImages(Mat imgInit, Mat imgEnd) {
 			}
 		}
 
-		std::string fileName = imagesOutputFolderName+"/frame_" + std::to_string(i) + ".jpg";
-		imwrite(fileName, result);
+		/*std::string fileName = imagesOutputFolderName+"/frame_" + std::to_string(i) + ".jpg";
+		imwrite(fileName, result);*/
+		listImages.push_back(result);
 		if (int(P) % 2 == 0) {
 			gotoxy(int(P * 50) + 1, 1);
 			std::cout << "=";
 		}
 		gotoxy(24, 2);
-		cout << "%" << int(P * 100);
-
+		cout << int(P * 100) << "%";
 	}
+	gotoxy(24, 2);
+	cout << "100%";
+	cout << endl;
+	auto end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
+	auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+	auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+	cout << "Tiempo tardado en generar las imagenes: " << durationms.count() << "ms" << endl;
+	cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
+	int cont = 0;
+	for (int i = 0; i < listImages.size(); i++)
+	{
+		std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string(i) + ".jpg";
+		imwrite(fileName, listImages[i]);
+		//listImages.erase(listImages.begin());  // Elimina el primer elemento del vector
+	}
+	listImages.clear();
+	
+	
 	std::cout << std::endl;
 
 	return 0;
@@ -160,7 +182,8 @@ int GeneratedVideo(Mat imgInit, Mat imgEnd) {
 	gotoxy(51, 1);
 	std::cout << ">";
 	gotoxy(24, 2);
-	cout << "%" << int(0 * 100);
+	cout << int(0 * 100) << "%";
+	auto start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
 	for (int i = 0; i <= frames; ++i) {
 		float P = static_cast<float>(i) / frames;
 		Mat result = imgInit.clone();
@@ -186,8 +209,16 @@ int GeneratedVideo(Mat imgInit, Mat imgEnd) {
 			std::cout << "=";
 		}
 		gotoxy(24, 2);
-		cout<< "%" << int(P * 100);
+		cout << int(P * 100) << "%";
 	}
+	gotoxy(24, 2);
+	cout << "100%";
+	cout << endl;
+	auto end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
+	auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+	auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+	cout << "Tiempo tardado en generar el video: " << durationms.count() << "ms" << endl;
+	cout << "Tiempo tardado en generar el video: " << durationsec.count() << "seg" << endl;
 	std::cout << std::endl;
 	
 	// Liberar el archivo de video

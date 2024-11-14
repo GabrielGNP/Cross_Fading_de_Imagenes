@@ -17,6 +17,8 @@
 
 #include <filesystem> // Para crear carpetas
 
+#include <chrono> // Para medir el tiempo
+
 //using namespace cv;
 using namespace std;
 namespace fs = std::filesystem;
@@ -94,9 +96,9 @@ int main(int argc, char* argv[])
 			int duration = 4;
 			int frames = fps * duration;
 			int imgSize = widthInit * heightInit * channelsInit;
-			/*vector<unsigned char*> vecImgs;*/
-			
-			
+			vector<unsigned char*> vecImgs;
+			cout << "comienza a cronometrar...";
+			auto start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
 			for (int i = 1; i < cantidadNodos; ++i) {
 				MPI_Send(&frames, 5, MPI_INT, i, 0, MPI_COMM_WORLD);
 				MPI_Send(&widthInit, 5, MPI_INT, i, 0, MPI_COMM_WORLD);
@@ -126,9 +128,9 @@ int main(int argc, char* argv[])
 					{
 						unsigned char* imgResult = new unsigned char[imgSize];
 						MPI_Recv(imgResult, imgSize, MPI_UNSIGNED_CHAR, CP, CP, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-						/*vecImgs.push_back(imgResult);*/
-						string name = pathProgram + "/"+ nameOutputImages + "/output_" + std::to_string(CP+i-cantidadNodos+1) + ".png";
-						createImage(name, widthInit, heightInit, channelsInit, imgResult);
+						vecImgs.push_back(imgResult);
+						/*string name = pathProgram + "/"+ nameOutputImages + "/output_" + std::to_string(CP+i-cantidadNodos+1) + ".png";
+						createImage(name, widthInit, heightInit, channelsInit, imgResult);*/
 						cont = i;
 						/*std::cout << ".";*/
 					}
@@ -141,9 +143,9 @@ int main(int argc, char* argv[])
 				{
 					unsigned char* imgResult = new unsigned char[imgSize];
 					MPI_Recv(imgResult, imgSize, MPI_UNSIGNED_CHAR, CP, CP, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-					/*vecImgs.push_back(imgResult);*/
-					string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(CP + cont - cantidadNodos + 1) + ".png";
-					createImage(name, widthInit, heightInit, channelsInit, imgResult);
+					vecImgs.push_back(imgResult);
+					/*string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(CP + cont - cantidadNodos + 1) + ".png";
+					createImage(name, widthInit, heightInit, channelsInit, imgResult);*/
 				}
 			}
 
@@ -154,14 +156,17 @@ int main(int argc, char* argv[])
 				MPI_Send(&bucle, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
 			}
 			/*cout << "==== finalizó todos los procesos esclavos ====" << endl;*/
-			
-			/*cout << "comienza a generar la imagenes" << endl;
+			auto end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
+			auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+			auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+			cout << "Tiempo tardado en generar el video: " << durationms.count() << "ms" << endl;
+			cout << "Tiempo tardado en generar el video: " << durationsec.count() << "seg" << endl;
+			cout << "comienza a generar la imagenes" << endl;
 			for (int i = 0; i < vecImgs.size(); i++) {
 				string name = "images_Output/output_" + std::to_string(i) + ".png";
-				vecImgs[i];
 				stbi_write_png(name.c_str(), widthInit, heightInit, channelsInit, vecImgs[i], widthInit * channelsInit);
-			}*/
-			
+			}
+			vecImgs.clear();
 			stbi_image_free(imgInit); // Libera la memoria cuando termines
 			stbi_image_free(imgEnd);
 			
@@ -237,8 +242,11 @@ int main(int argc, char* argv[])
 		int duration = 4;
 		int frames = fps * duration;
 		int imgSize = widthInit * heightInit * channelsInit;
-		
+		vector<unsigned char*> vecImgs;
+
 		float P = 0.0;
+		cout << "comienza a cronometrar...";
+		auto start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
 		for (int f = 0; f < frames; f++) {
 			P = static_cast<float>(f) / frames;
 			unsigned char* imgResult = new unsigned char[imgSize];
@@ -247,11 +255,23 @@ int main(int argc, char* argv[])
 				imgResult[i + 1] = ((int)imgInit[i + 1] * (1 - P) + (int)imgEnd[i + 1] * P); // Canal verde
 				imgResult[i + 2] = ((int)imgInit[i + 2] * (1 - P) + (int)imgEnd[i + 2] * P); // Canal azul
 			}
-			string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(f) + ".png";
-			createImage(name, widthInit, heightInit, channelsInit, imgResult);
+			/*string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(f) + ".png";
+			createImage(name, widthInit, heightInit, channelsInit, imgResult);*/
+			vecImgs.push_back(imgResult);
 		}
+		auto end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
+		auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+		auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+		cout << "Tiempo tardado en generar el video: " << durationms.count() << "ms" << endl;
+		cout << "Tiempo tardado en generar el video: " << durationsec.count() << "seg" << endl;
+		for (int i = 0; i < vecImgs.size(); i++) {
+			string name = "images_Output/output_" + std::to_string(i) + ".png";
+			stbi_write_png(name.c_str(), widthInit, heightInit, channelsInit, vecImgs[i], widthInit * channelsInit);
+		}
+		vecImgs.clear();
 		stbi_image_free(imgInit); // Libera la memoria cuando termines
 		stbi_image_free(imgEnd);
+
 		
 	}
 		
