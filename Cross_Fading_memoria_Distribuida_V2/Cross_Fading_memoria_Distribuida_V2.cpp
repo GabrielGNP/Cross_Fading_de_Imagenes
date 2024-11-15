@@ -71,11 +71,11 @@ int main(int argc, char* argv[])
 		if (node == 0) {
 			std::string pathProgram = GetPathProgram();
 			string nameInputFolder = "Images";
-			string nameOutputImages = "Output_Images";
+			string nameOutputImages = "Images_Output";
 			CreateFolder(nameOutputImages);
 
-			string nameImageInit = pathProgram + "/" + nameInputFolder + "/test1_a.jpg";
-			string nameImageEnd = pathProgram + "/" + nameInputFolder + "/test1_b.jpg";
+			string nameImageInit = pathProgram + "/" + nameInputFolder + "/test1_a(x5000).jpg";
+			string nameImageEnd = pathProgram + "/" + nameInputFolder + "/test1_b(x5000).jpg";
 
 			int widthInit = 0, heightInit = 0, channelsInit = 0;
 			int widthEnd = 0, heightEnd = 0, channelsEnd = 0;
@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
 				{
 					unsigned char* imgResult = new unsigned char[imgSize];
 					MPI_Recv(imgResult, imgSize, MPI_UNSIGNED_CHAR, CP, CP, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-					vecImgs.push_back(imgResult);
+					/*vecImgs.push_back(imgResult);*/
 					/*string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(CP + cont - cantidadNodos + 1) + ".png";
 					createImage(name, widthInit, heightInit, channelsInit, imgResult);*/
 				}
@@ -171,10 +171,10 @@ int main(int argc, char* argv[])
 			vecImgs.clear();
 			cout << " ======= Imagenes generadas completamente =======" << endl;
 			cout << " presione cualquier tecla para salir..." << endl;
-			_getch();
+			cin>> nameInputFolder;
 			stbi_image_free(imgInit); // Libera la memoria cuando termines
 			stbi_image_free(imgEnd);
-			
+			MPI_Finalize();
 		}
 		else {
 			int widthInit = 0, heightInit = 0, channelsInit = 0;
@@ -222,11 +222,10 @@ int main(int argc, char* argv[])
 
 		std::string pathProgram = GetPathProgram();
 		string nameInputFolder = "Images";
-		string nameOutputImages = "Output_Images";
+		string nameOutputImages = "Images_Output";
 		CreateFolder(nameOutputImages);
-
-		string nameImageInit = pathProgram + "/" + nameInputFolder + "/test1_a.jpg";
-		string nameImageEnd = pathProgram + "/" + nameInputFolder + "/test1_b.jpg";
+		string nameImageInit = pathProgram + "/" + nameInputFolder + "/test1_a(x800).jpg";
+		string nameImageEnd = pathProgram + "/" + nameInputFolder + "/test1_b(x800).jpg";
 		
 		int widthInit = 0, heightInit = 0, channelsInit = 0;
 		int widthEnd = 0, heightEnd = 0, channelsEnd = 0;
@@ -276,10 +275,12 @@ int main(int argc, char* argv[])
 		}
 		cout << " ======= Imagenes generadas completamente =======" << endl;
 		cout << " presione cualquier tecla para salir..." << endl;
-		_getch();
+		/*_getch();*/
 		vecImgs.clear();
+		cin >> nameInputFolder;
 		stbi_image_free(imgInit); // Libera la memoria cuando termines
 		stbi_image_free(imgEnd);
+		MPI_Finalize();
 
 		
 	}
