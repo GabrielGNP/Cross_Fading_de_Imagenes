@@ -30,8 +30,8 @@ int duration = 4; // segundos de duración del
 string videoOutputFolderName = "Video_Output";
 string imagesOutputFolderName = "Images_Output";
 string imagesInputFolderName = "Images";
-string nameImgInit = "test1_a.jpg";
-string nameImgEnd = "test1_b.jpg";
+string nameImgInit = "test1_a(x800).jpg";
+string nameImgEnd = "test1_b(x800).jpg";
 
 int cantidadProcesos = 2;
 

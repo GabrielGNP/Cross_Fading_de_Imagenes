@@ -71,8 +71,8 @@ int main(int argc, char* argv[])
 			string nameOutputImages = "Output_Images";
 			CreateFolder(nameOutputImages);
 
-			string nameImageInit = pathProgram + "/" + nameInputFolder + "/test1_a.jpg";
-			string nameImageEnd = pathProgram + "/" + nameInputFolder + "/test1_b.jpg";
+			string nameImageInit = pathProgram + "/" + nameInputFolder + "/test1_a(x800).jpg";
+			string nameImageEnd = pathProgram + "/" + nameInputFolder + "/test1_b(x800).jpg";
 
 			int widthInit = 0, heightInit = 0, channelsInit = 0;
 			int widthEnd = 0, heightEnd = 0, channelsEnd = 0;
@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
 				MPI_Send(imgInit, imgSize, MPI_UNSIGNED_CHAR, i, 0, MPI_COMM_WORLD);
 				MPI_Send(imgEnd, imgSize, MPI_UNSIGNED_CHAR, i, 0, MPI_COMM_WORLD);
 			}
-			/*cout << "termino bucle de envios" <<endl;*/
+			cout << "termino bucle de envios" <<endl;
 
 			int contPros = 1;
 			int bucle = 0;
@@ -119,8 +119,7 @@ int main(int argc, char* argv[])
 
 				contPros++;
 				if (contPros == cantidadNodos) {
-					/*cout << "prosesos insuficientes" << endl;
-					*/
+					/*cout << "prosesos insuficientes" << endl;*/
 					/*std::cout << "creando imagenes";*/
 					for (int CP = 1; CP < cantidadNodos; CP++)
 					{
@@ -130,10 +129,10 @@ int main(int argc, char* argv[])
 						string name = pathProgram + "/"+ nameOutputImages + "/output_" + std::to_string(CP+i-cantidadNodos+1) + ".png";
 						createImage(name, widthInit, heightInit, channelsInit, imgResult);
 						cont = i;
-						/*std::cout << ".";*/
 					}
 					contPros = 1;
 				}
+				std::cout << ".";
 			}
 			/*cout << "comienza a traer toda la info faltante" << endl;*/
 			if (contPros > 1) {
@@ -144,6 +143,7 @@ int main(int argc, char* argv[])
 					/*vecImgs.push_back(imgResult);*/
 					string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(CP + cont - cantidadNodos + 1) + ".png";
 					createImage(name, widthInit, heightInit, channelsInit, imgResult);
+					cout << ".";
 				}
 			}
 
@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
 				vecImgs[i];
 				stbi_write_png(name.c_str(), widthInit, heightInit, channelsInit, vecImgs[i], widthInit * channelsInit);
 			}*/
-			
+			cout << "====fin del programa====";
 			stbi_image_free(imgInit); // Libera la memoria cuando termines
 			stbi_image_free(imgEnd);
 			
@@ -215,8 +215,8 @@ int main(int argc, char* argv[])
 		string nameOutputImages = "Output_Images";
 		CreateFolder(nameOutputImages);
 
-		string nameImageInit = pathProgram + "/" + nameInputFolder + "/test1_a.jpg";
-		string nameImageEnd = pathProgram + "/" + nameInputFolder + "/test1_b.jpg";
+		string nameImageInit = pathProgram + "/" + nameInputFolder + "/test1_a(x800).jpg";
+		string nameImageEnd = pathProgram + "/" + nameInputFolder + "/test1_b(x800).jpg";
 		
 		int widthInit = 0, heightInit = 0, channelsInit = 0;
 		int widthEnd = 0, heightEnd = 0, channelsEnd = 0;
@@ -237,7 +237,7 @@ int main(int argc, char* argv[])
 		int duration = 4;
 		int frames = fps * duration;
 		int imgSize = widthInit * heightInit * channelsInit;
-		
+		cout << "creando imagenes"<<endl;
 		float P = 0.0;
 		for (int f = 0; f < frames; f++) {
 			P = static_cast<float>(f) / frames;
@@ -249,7 +249,10 @@ int main(int argc, char* argv[])
 			}
 			string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(f) + ".png";
 			createImage(name, widthInit, heightInit, channelsInit, imgResult);
+			cout << ".";
 		}
+		cout << endl;
+		cout << "fin programa" << endl;
 		stbi_image_free(imgInit); // Libera la memoria cuando termines
 		stbi_image_free(imgEnd);
 		
