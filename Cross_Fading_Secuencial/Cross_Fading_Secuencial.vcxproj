@@ -71,7 +71,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\gabip\OneDrive\Desktop\Universidad, Cursos y Educación\Universidad\4° Año\Computación avanzada\TP Final\Cross_Fading_de_Imágenes\opencv\build\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\gabip\OneDrive\Desktop\Universidad, Cursos y Educación\Universidad\4° Año\Computación avanzada\TP Final\Cross_Fading_de_Imágenes\Cross_Fading_Secuencial;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\gabip\OneDrive\Desktop\Universidad, Cursos y Educación\Universidad\4° Año\Computación avanzada\TP Final\Cross_Fading_de_Imágenes\opencv\build\x64\vc16\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
