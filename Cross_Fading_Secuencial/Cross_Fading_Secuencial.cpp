@@ -375,8 +375,7 @@ int MenuSelectImages() {
 void CreateImages() {
 	CreateFolder(imagesOutputFolderName);
 
-	/*Mat imgInit = imread(pathProgram + "/" + imagesInputFolderName + "/" + nameImgInit);
-	Mat imgEnd = imread(pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd);*/
+
 	string nameImageInit = pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd;
 	string nameImageEnd = pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd;
 
