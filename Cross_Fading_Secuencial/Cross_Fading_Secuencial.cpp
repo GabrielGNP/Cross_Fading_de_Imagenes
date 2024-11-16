@@ -403,25 +403,6 @@ void CreateImages() {
 		std::cout << "Hubo un error al crear las imágenes";
 }
 
-void CreateVideo() {
-	int stop;
-	CreateFolder(videoOutputFolderName);
-
-	Mat imgInit = imread(pathProgram + "/" + imagesInputFolderName + "/" + nameImgInit);
-	Mat imgEnd = imread(pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd);
-
-	system("cls");
-	if (GeneratedVideo(imgInit, imgEnd) == 0)
-	{
-		std::cout << "Video creado" << endl << endl;
-		std::cout << "            Presione cualquier tecla para continuar..." << endl;
-		_getch();
-		system("cls");
-	}		
-	else
-		std::cout << "no se pudo crear el video";
-}
-
 void PrintOptions(int posMenu, vector<string> options) {
 	system("cls");
 	for (int op = 0; op < options.size(); op++) {
