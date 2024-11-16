@@ -58,7 +58,7 @@ int createImage(string name, int width, int height, int channels, unsigned char*
 
 int main(int argc, char* argv[])
 {
-	
+
 	int node, cantidadNodos;
 	int nodoPrincipal = 0;
 	MPI_Init(&argc, &argv);
@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
 
 
 	if (cantidadNodos > 1) {
-		
+
 		if (node == 0) {
 			std::string pathProgram = GetPathProgram();
 			string nameInputFolder = "Images";
@@ -80,26 +80,26 @@ int main(int argc, char* argv[])
 			int widthInit = 0, heightInit = 0, channelsInit = 0;
 			int widthEnd = 0, heightEnd = 0, channelsEnd = 0;
 
-			
+
 			unsigned char* imgInit = stbi_load(nameImageInit.c_str(), &widthInit, &heightInit, &channelsInit, 0);
 			if (imgInit == nullptr) {
 				cerr << "Error cargando la imagen inicial\n";
 				return -1;
 			}
-			
+
 			unsigned char* imgEnd = stbi_load(nameImageEnd.c_str(), &widthEnd, &heightEnd, &channelsEnd, 0);
 			if (imgEnd == nullptr) {
 				cerr << "Error cargando la imagen final\n";
 				return -1;
 			}
-			cout << "cargó las imagenes";
+
 
 			int fps = 24;
 			int duration = 4;
 			int frames = fps * duration;
 			int imgSize = widthInit * heightInit * channelsInit;
 			vector<unsigned char*> vecImgs;
-		
+			cout << "calculando imagenes" << endl;
 			auto start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
 			for (int i = 1; i < cantidadNodos; ++i) {
 				MPI_Send(&frames, 5, MPI_INT, i, 0, MPI_COMM_WORLD);
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
 			int bucle = 0;
 			float P = 0.0;
 			int cont = 0;
-			std::cout << "creando imagenes";
+
 			for (int i = 0; i < frames; i++) {
 				MPI_Send(&bucle, 1, MPI_INT, contPros, 0, MPI_COMM_WORLD);
 				P = static_cast<float>(i) / frames;
@@ -127,8 +127,9 @@ int main(int argc, char* argv[])
 					{
 						unsigned char* imgResult = new unsigned char[imgSize];
 						MPI_Recv(imgResult, imgSize, MPI_UNSIGNED_CHAR, CP, CP, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-						string name = pathProgram + "/"+ nameOutputImages + "/output_" + std::to_string(i - (cantidadNodos - CP)+1) + ".png";
-						createImage(name, widthInit, heightInit, channelsInit, imgResult);
+						/*string name = pathProgram + "/"+ nameOutputImages + "/output_" + std::to_string(i - (cantidadNodos - CP)+1) + ".png";
+						createImage(name, widthInit, heightInit, channelsInit, imgResult);*/
+						vecImgs.push_back(imgResult);
 						cont = i;
 						std::cout << ".";
 					}
@@ -142,28 +143,35 @@ int main(int argc, char* argv[])
 					unsigned char* imgResult = new unsigned char[imgSize];
 					MPI_Recv(imgResult, imgSize, MPI_UNSIGNED_CHAR, CP, CP, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-					string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(CP + cont - cantidadNodos + 1) + ".png";
-					createImage(name, widthInit, heightInit, channelsInit, imgResult);
+					/*string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(CP + cont - cantidadNodos + 1) + ".png";
+					createImage(name, widthInit, heightInit, channelsInit, imgResult);*/
+					vecImgs.push_back(imgResult);
 				}
 			}
+			cout << endl;
 			auto end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
 			auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
 			auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
 			cout << "Tiempo tardado en generar el video: " << durationms.count() << "ms" << endl;
 			cout << "Tiempo tardado en generar el video: " << durationsec.count() << "seg" << endl;
-			cout << "comienza a generar la imagenes" << endl;
-			
+
 			bucle = 1;
-		
+
 			for (int i = 1; i < cantidadNodos; ++i) {
 				MPI_Send(&bucle, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
 			}
 			/*cout << "==== finalizó todos los procesos esclavos ====" << endl;*/
 			cout << endl;
-
+			cout << "escribiendo imagenes" << endl;
+			for (int i = 0; i < vecImgs.size(); i++)
+			{
+				string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(i) + ".png";
+				createImage(name, widthInit, heightInit, channelsInit, vecImgs[i]);
+				cout << ".";
+			}
 			cout << " ======= Imagenes generadas completamente =======" << endl;
-	
-			stbi_image_free(imgInit); // Libera la memoria cuando termines
+
+			stbi_image_free(imgInit); // Libera la memoria cuando termina
 			stbi_image_free(imgEnd);
 			MPI_Finalize();
 		}
@@ -184,7 +192,7 @@ int main(int argc, char* argv[])
 
 			MPI_Recv(imgInit, imgSize, MPI_UNSIGNED_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			MPI_Recv(imgEnd, imgSize, MPI_UNSIGNED_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			
+
 			float P = 0.0;
 			int bucle = 0;
 
@@ -196,12 +204,12 @@ int main(int argc, char* argv[])
 
 					MPI_Recv(&P, 1, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 					for (int i = 0; i < imgSize; i += channelsInit) {
-					
+
 						imgResult[i] = ((int)imgInit[i] * (1 - P) + (int)imgEnd[i] * P); // Canal rojo
 						imgResult[i + 1] = ((int)imgInit[i + 1] * (1 - P) + (int)imgEnd[i + 1] * P); // Canal verde
 						imgResult[i + 2] = ((int)imgInit[i + 2] * (1 - P) + (int)imgEnd[i + 2] * P); // Canal azul
 					}
-					
+
 					MPI_Send(imgResult, imgSize, MPI_UNSIGNED_CHAR, 0, node, MPI_COMM_WORLD);
 
 				}
@@ -217,7 +225,7 @@ int main(int argc, char* argv[])
 		CreateFolder(nameOutputImages);
 		string nameImageInit = pathProgram + "/" + nameInputFolder + "/test1_a(x800).jpg";
 		string nameImageEnd = pathProgram + "/" + nameInputFolder + "/test1_b(x800).jpg";
-		
+
 		int widthInit = 0, heightInit = 0, channelsInit = 0;
 		int widthEnd = 0, heightEnd = 0, channelsEnd = 0;
 
@@ -250,25 +258,34 @@ int main(int argc, char* argv[])
 				imgResult[i + 1] = ((int)imgInit[i + 1] * (1 - P) + (int)imgEnd[i + 1] * P); // Canal verde
 				imgResult[i + 2] = ((int)imgInit[i + 2] * (1 - P) + (int)imgEnd[i + 2] * P); // Canal azul
 			}
-			string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(f) + ".png";
-			createImage(name, widthInit, heightInit, channelsInit, imgResult);
+			vecImgs.push_back(imgResult);
+			/*string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(f) + ".png";
+			createImage(name, widthInit, heightInit, channelsInit, imgResult);*/
 			cout << ".";
 		}
 		cout << endl;
-		auto end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
-		auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
-		auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+		auto endG = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
+		auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(endG - start); // <======== calcula el tiempo en función del final y el inicio
+		auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(endG - start); // <======== calcula el tiempo en función del final y el inicio
 		cout << "Tiempo tardado en generar el video: " << durationms.count() << "ms" << endl;
 		cout << "Tiempo tardado en generar el video: " << durationsec.count() << "seg" << endl;
-
+		cout << "escribiendo imagenes" << endl;
+		for (int i = 0; i < vecImgs.size(); i++)
+		{
+			string name = pathProgram + "/" + nameOutputImages + "/output_" + std::to_string(i) + ".png";
+			createImage(name, widthInit, heightInit, channelsInit, vecImgs[i]);
+			cout << ".";
+		}
 		cout << " ======= Imagenes generadas completamente =======" << endl;
-
+		auto end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
+		durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+		durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+		cout << "Tiempo tardado en generar el video: " << durationms.count() << "ms" << endl;
+		cout << "Tiempo tardado en generar el video: " << durationsec.count() << "seg" << endl;
 
 		stbi_image_free(imgInit); // Libera la memoria cuando termines
 		stbi_image_free(imgEnd);
 		MPI_Finalize();
-
-		
 	}
 	MPI_Finalize();
 }

@@ -101,7 +101,7 @@ int GenerateImages(unsigned char* imgInit, unsigned char* imgEnd, int widthInit,
 	float iteration = 1.0f / frames;
 	int imgSize = widthInit * heightInit * channelsInit;
 
-	auto start = std::chrono::high_resolution_clock::now(), end = std::chrono::high_resolution_clock::now();
+	auto start = std::chrono::high_resolution_clock::now(), endG = std::chrono::high_resolution_clock::now(), end = std::chrono::high_resolution_clock::now();
 
 # pragma omp parallel num_threads(cantidadProcesos)
 	{
@@ -111,25 +111,29 @@ int GenerateImages(unsigned char* imgInit, unsigned char* imgEnd, int widthInit,
 		gotoxy(51, id_proceso + 1);
 		std::cout << ">";
 
+		vector<unsigned char*> listImgs;
+
 		if (id_proceso == 0) {
 			start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
+			gotoxy(0, 0);
+			cout << "calculando imagenes";
 		}
 #pragma omp barrier  // Los procesos esperan a que todos lleguen
-
 
 		for (int i = id_proceso; i < frames; i = i + cantidadProcesos)
 		{
 			float P = i * iteration;
 			unsigned char* imgResult = new unsigned char[imgSize];
-			for (int i = 0; i < imgSize; i += channelsInit) {
-				imgResult[i] = ((int)imgInit[i] * (1 - P) + (int)imgEnd[i] * P); // Canal rojo
-				imgResult[i + 1] = ((int)imgInit[i + 1] * (1 - P) + (int)imgEnd[i + 1] * P); // Canal verde
-				imgResult[i + 2] = ((int)imgInit[i + 2] * (1 - P) + (int)imgEnd[i + 2] * P); // Canal azul
+			for (int j = 0; j < imgSize; j += channelsInit) {
+				imgResult[j] = ((int)imgInit[j] * (1 - P) + (int)imgEnd[j] * P); // Canal rojo
+				imgResult[j + 1] = ((int)imgInit[j + 1] * (1 - P) + (int)imgEnd[j + 1] * P); // Canal verde
+				imgResult[j + 2] = ((int)imgInit[j + 2] * (1 - P) + (int)imgEnd[j + 2] * P); // Canal azul
 			}
 
-			string name = "images_Output/output_" + std::to_string(i) + ".png";
-			stbi_write_png(name.c_str(), widthInit, heightInit, channelsInit, imgResult, widthInit * channelsInit);
-
+			/*string name = "images_Output/output_" + std::to_string(i) + ".png";
+			stbi_write_png(name.c_str(), widthInit, heightInit, channelsInit, imgResult, widthInit * channelsInit);*/
+			listImgs.push_back(imgResult);
+			stbi_image_free(imgResult); // Libera la memoria cuando termina
 			
 			if (int(P) % 2 == 0) {
 				gotoxy(int(P * 50) + 1, id_proceso+1);
@@ -139,14 +143,25 @@ int GenerateImages(unsigned char* imgInit, unsigned char* imgEnd, int widthInit,
 		}
 #pragma omp barrier  // Los procesos esperan a que todos lleguen
 		if (id_proceso == 0) {
-			end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
+			endG = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
+			auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(endG - start); // <======== calcula el tiempo en función del final y el inicio
+			auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(endG - start); // <======== calcula el tiempo en función del final y el inicio
+			gotoxy(0, cantidadProcesos+2);
+			cout << "Tiempo tardado en generar las imagenes: " << durationms.count() << "ms" << endl;
+			cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
+			cout << "escribiendo imagenes";
+		}
+		for (int i = 0; i < listImgs.size(); i++) {
+			string name = "images_Output/output_" + std::to_string(i) + ".png";
+			stbi_write_png(name.c_str(), widthInit, heightInit, channelsInit, listImgs[i], widthInit * channelsInit);
+		}
+		if (id_proceso == 0) {
+			endG = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
 			auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
 			auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
-			gotoxy(0, 4);
 			cout << "Tiempo tardado en generar las imagenes: " << durationms.count() << "ms" << endl;
 			cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
 		}
-
 	}
 	gotoxy(0, cantidadProcesos+2);
 	std::cout << endl;
@@ -158,7 +173,7 @@ int GenerateImages(unsigned char* imgInit, unsigned char* imgEnd, int widthInit,
 void CreateImages() {
 	CreateFolder(imagesOutputFolderName);
 	
-	string nameImageInit = pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd;
+	string nameImageInit = pathProgram + "/" + imagesInputFolderName + "/" + nameImgInit;
 	string nameImageEnd = pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd;
 	int widthInit = 0, heightInit = 0, channelsInit = 0;
 	int widthEnd = 0, heightEnd = 0, channelsEnd = 0;

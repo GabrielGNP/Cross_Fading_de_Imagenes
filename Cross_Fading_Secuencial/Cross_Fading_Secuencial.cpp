@@ -104,7 +104,9 @@ int GenerateImages(unsigned char* imgInit, unsigned char* imgEnd, int widthInit,
 	int frames = fps * duration; // cantidad de frames totales
 	int imgSize = widthInit * heightInit * channelsInit;
 
+	vector<unsigned char*> listImgs;
 	system("cls");
+	cout << "calculando imagenes"<<endl;
 	gotoxy(0, 1);
 	std::cout << "<";
 	gotoxy(51, 1);
@@ -112,22 +114,21 @@ int GenerateImages(unsigned char* imgInit, unsigned char* imgEnd, int widthInit,
 	gotoxy(24, 2);
 	cout << int(0 * 100) << "%";
 	auto start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
+	auto startG = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
 	for (int i = 0; i < frames; ++i) {
 		float P = static_cast<float>(i) / frames;
 
 		unsigned char* imgResult = new unsigned char[imgSize];
 
 
-		for (int i = 0; i < imgSize; i += channelsInit) {
+		for (int j = 0; j < imgSize; j += channelsInit) {
 
-			imgResult[i] = ((int)imgInit[i] * (1 - P) + (int)imgEnd[i] * P); // Canal rojo
-			imgResult[i + 1] = ((int)imgInit[i + 1] * (1 - P) + (int)imgEnd[i + 1] * P); // Canal verde
-			imgResult[i + 2] = ((int)imgInit[i + 2] * (1 - P) + (int)imgEnd[i + 2] * P); // Canal azul
+			imgResult[j] = ((int)imgInit[j] * (1 - P) + (int)imgEnd[j] * P); // Canal rojo
+			imgResult[j + 1] = ((int)imgInit[j + 1] * (1 - P) + (int)imgEnd[j + 1] * P); // Canal verde
+			imgResult[j + 2] = ((int)imgInit[j + 2] * (1 - P) + (int)imgEnd[j + 2] * P); // Canal azul
 		}
-		
-		string name = "images_Output/output_" + std::to_string(i) + ".png";
-		stbi_write_png(name.c_str(), widthInit, heightInit, channelsInit, imgResult, widthInit * channelsInit);
-		
+		listImgs.push_back(imgResult);
+				
 
 		if (int(P) % 2 == 0) {
 			gotoxy(int(P * 50) + 1, 1);
@@ -135,14 +136,34 @@ int GenerateImages(unsigned char* imgInit, unsigned char* imgEnd, int widthInit,
 		}
 		gotoxy(24, 2);
 		cout << int(P * 100) << "%";
-		stbi_image_free(imgResult);
+		
 	}
+	cout << endl;
 	gotoxy(24, 2);
 	cout << "100%";
 	cout << endl;
+	auto endG = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
+	auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(endG - startG); // <======== calcula el tiempo en función del final y el inicio
+	auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(endG - startG); // <======== calcula el tiempo en función del final y el inicio
+	gotoxy(0, 3);
+	cout << "Tiempo tardado en generar las imagenes: " << durationms.count() << "ms" << endl;
+	gotoxy(0, 4);
+	cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
+	gotoxy(0, 5);
+	cout << "escribiendo imagenes" << endl;
+	gotoxy(0, 6);
+	cout << "<";
+	for (int i = 0; i < listImgs.size(); i++) {
+		string name = "images_Output/output_" + std::to_string(i) + ".png";
+		stbi_write_png(name.c_str(), widthInit, heightInit, channelsInit, listImgs[i], widthInit * channelsInit);
+		if (int(i) % 2 == 0) {
+			std::cout << "=";
+		}
+	}
+	cout << ">" << endl;
 	auto end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
-	auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
-	auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+	durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
+	durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
 	cout << "Tiempo tardado en generar las imagenes: " << durationms.count() << "ms" << endl;
 	cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
 
@@ -376,7 +397,7 @@ void CreateImages() {
 	CreateFolder(imagesOutputFolderName);
 
 
-	string nameImageInit = pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd;
+	string nameImageInit = pathProgram + "/" + imagesInputFolderName + "/" + nameImgInit;
 	string nameImageEnd = pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd;
 
 	int widthInit = 0, heightInit = 0, channelsInit = 0;
