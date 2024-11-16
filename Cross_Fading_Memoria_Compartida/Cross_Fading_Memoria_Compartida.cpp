@@ -1,17 +1,15 @@
 #include <iostream>
 #include <omp.h>
 
+#include <cstdlib>
+#include <vector>
+#include <string>
+#include <conio.h>  // Para getch() en Windows
 #include <filesystem> // Para crear carpetas
 #include <windows.h> // Para para el goto y obtener el Path del programa
-#include <conio.h>  // Para getch() en Windows
 
 #include <chrono> // Para medir el tiempo
 
-// Para openCV
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/opencv.hpp>
 
 // Para stb
 #define STB_IMAGE_IMPLEMENTATION
@@ -21,7 +19,6 @@
 #include "stb_image_write.h"
 
 using namespace std;
-using namespace cv;
 namespace fs = std::filesystem;
 
 
@@ -41,14 +38,6 @@ int cantidadProcesos = 2;
 
 //Funciones de utilidades
 
-// ========= Mostramos la imagen =========
-void showImage(Mat img) {
-	namedWindow("First OpenCV Application", WINDOW_AUTOSIZE);
-	imshow("First OpenCV Application", img);
-	moveWindow("First OpenCV Application", 0, 45);
-	waitKey(0);
-	destroyAllWindows();
-}
 
 std::string GetPathProgram() {
 
@@ -107,53 +96,46 @@ void gotoxy(int x, int y) {
 
 
 // Funciones de Cross Fading
-int GenerateImages(Mat imgInit, Mat imgEnd) {
+int GenerateImages(unsigned char* imgInit, unsigned char* imgEnd, int widthInit, int heightInit, int channelsInit) {
 	int frames = fps * duration;
 	float iteration = 1.0f / frames;
+	int imgSize = widthInit * heightInit * channelsInit;
 
 	auto start = std::chrono::high_resolution_clock::now(), end = std::chrono::high_resolution_clock::now();
 
 # pragma omp parallel num_threads(cantidadProcesos)
 	{
 		int id_proceso = omp_get_thread_num();
-		gotoxy(0, id_proceso+1);
+		gotoxy(0, id_proceso + 1);
 		std::cout << "<";
-		gotoxy(51, id_proceso+1);
+		gotoxy(51, id_proceso + 1);
 		std::cout << ">";
-		/*gotoxy(53, id_proceso+1);
-		std::cout << "%" << int(0 * 100);*/
-		vector<Mat> listImages;
-		listImages.resize(frames);
 
 		if (id_proceso == 0) {
 			start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
 		}
 #pragma omp barrier  // Los procesos esperan a que todos lleguen
-		/*for (float P = id_proceso * iteration; P * 100 < frames; P += iteration * cantidadProcesos)*/
+
 
 		for (int i = id_proceso; i < frames; i = i + cantidadProcesos)
 		{
 			float P = i * iteration;
-			Mat result = imgInit.clone();
-			for (int y = 0; y < imgInit.rows; ++y) {
-				for (int x = 0; x < imgInit.cols; ++x) {
-					Vec3b pixelInit = imgInit.at<Vec3b>(y, x);
-					Vec3b pixelEnd = imgEnd.at<Vec3b>(y, x);
-					Vec3b& pixelResult = result.at<Vec3b>(y, x);
-					pixelResult[0] = static_cast<uchar>(pixelInit[0] * (1 - P) + pixelEnd[0] * P); // Canal azul
-					pixelResult[1] = static_cast<uchar>(pixelInit[1] * (1 - P) + pixelEnd[1] * P); // Canal verde
-					pixelResult[2] = static_cast<uchar>(pixelInit[2] * (1 - P) + pixelEnd[2] * P); // Canal rojo
-				}
+			unsigned char* imgResult = new unsigned char[imgSize];
+			for (int i = 0; i < imgSize; i += channelsInit) {
+				imgResult[i] = ((int)imgInit[i] * (1 - P) + (int)imgEnd[i] * P); // Canal rojo
+				imgResult[i + 1] = ((int)imgInit[i + 1] * (1 - P) + (int)imgEnd[i + 1] * P); // Canal verde
+				imgResult[i + 2] = ((int)imgInit[i + 2] * (1 - P) + (int)imgEnd[i + 2] * P); // Canal azul
 			}
-			/*std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string((int)i) + ".jpg";
-			imwrite(fileName, result);*/
-			listImages[i] = result;
+
+			string name = "images_Output/output_" + std::to_string(i) + ".png";
+			stbi_write_png(name.c_str(), widthInit, heightInit, channelsInit, imgResult, widthInit * channelsInit);
+
+			
 			if (int(P) % 2 == 0) {
 				gotoxy(int(P * 50) + 1, id_proceso+1);
 				std::cout << "=";
 			}
-			/*gotoxy(53+1,id_proceso+1);
-			std::cout << "%" << int(P);*/
+
 		}
 #pragma omp barrier  // Los procesos esperan a que todos lleguen
 		if (id_proceso == 0) {
@@ -165,107 +147,34 @@ int GenerateImages(Mat imgInit, Mat imgEnd) {
 			cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
 		}
 
-
-		for (int i = id_proceso; i < frames; i = i + cantidadProcesos)
-		{
-			std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string((int)i) + ".jpg";
-			imwrite(fileName, listImages[i]);
-		}
 	}
 	gotoxy(0, cantidadProcesos+2);
 	std::cout << endl;
 	return 0;
 }
 
-int GenerateVideo(Mat imgInit, Mat imgEnd) {
-
-	int frames = fps * duration;
-	float iteration = 1.0f / frames;
-	
-	auto start = std::chrono::high_resolution_clock::now(), end = std::chrono::high_resolution_clock::now();
-	
-	vector<Mat>listImgs;
-	listImgs.resize(frames);
-	Size frameSize = imgInit.size();
-
-	// Inicializar el VideoWriter
-	VideoWriter video(videoOutputFolderName + "/output_video.avi", VideoWriter::fourcc('M', 'J', 'P', 'G'), fps, frameSize);
-	if (!video.isOpened()) {
-		std::cerr << "Error al abrir el archivo de video" << std::endl;
-		return -1;
-	}
-	system("cls");
-	/*std::cout << "frames: " << frames << "  -  iteration:" << iteration << endl;*/
-# pragma omp parallel num_threads(cantidadProcesos)
-	{
-		int id_proceso = omp_get_thread_num();
-
-		gotoxy(0, id_proceso + 1);
-		std::cout << "<";
-		gotoxy(51, id_proceso + 1);
-		std::cout << ">";
-		/*gotoxy(53, id_proceso + 1);
-		std::cout << "%" << int(0 * 100);*/
-		if (id_proceso == 0) {
-			start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
-		}
-#pragma omp barrier  // Los procesos esperan a que todos lleguen
-		/*for (float P = id_proceso * iteration; P * 100 < frames; P += iteration * cantidadProcesos)*/
-		for (int i = id_proceso; i < frames; i = i+cantidadProcesos)
-		{
-			float P = i * iteration;
-			Mat result = imgInit.clone();
-			for (int y = 0; y < imgInit.rows; ++y) {
-				for (int x = 0; x < imgInit.cols; ++x) {
-					Vec3b pixelInit = imgInit.at<Vec3b>(y, x);
-					Vec3b pixelEnd = imgEnd.at<Vec3b>(y, x);
-					Vec3b& pixelResult = result.at<Vec3b>(y, x);
-					pixelResult[0] = static_cast<uchar>(pixelInit[0] * (1 - P) + pixelEnd[0] * P); // Canal azul
-					pixelResult[1] = static_cast<uchar>(pixelInit[1] * (1 - P) + pixelEnd[1] * P); // Canal verde
-					pixelResult[2] = static_cast<uchar>(pixelInit[2] * (1 - P) + pixelEnd[2] * P); // Canal rojo
-				}
-			}
-			listImgs[i] = result;
-			if (int(P) % 2 == 0) {
-				gotoxy(int(P * 50) + 1, id_proceso + 1);
-				std::cout << "=";
-			}
-			/*gotoxy(53 + 1, id_proceso + 1);*/
-			/*cout << "%" << int(P);*/
-		}
-#pragma omp barrier  // Los procesos esperan a que todos lleguen
-		if (id_proceso == 0) {
-			end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
-			auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
-			auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
-			gotoxy(0, 4);
-			cout << "Tiempo tardado en generar las imagenes: " << durationms.count() << "ms" << endl;
-			cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
-		}
-
-
-	}
-
-	for (int i = 0; i < listImgs.size(); i++) {
-		video.write(listImgs[i]);
-	}
-	video.release();
-
-	return 0;
-}
-
-
 
 //Funcinalidaes
 void CreateImages() {
 	CreateFolder(imagesOutputFolderName);
 	
-	Mat imgInit = imread(pathProgram + "/" + imagesInputFolderName + "/" + nameImgInit);
-	Mat imgEnd = imread(pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd);
+	string nameImageInit = pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd;
+	string nameImageEnd = pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd;
+	int widthInit = 0, heightInit = 0, channelsInit = 0;
+	int widthEnd = 0, heightEnd = 0, channelsEnd = 0;
+	unsigned char* imgInit = stbi_load(nameImageInit.c_str(), &widthInit, &heightInit, &channelsInit, 0);
+	if (imgInit == nullptr) {
+		cerr << "Error cargando la imagen inicial\n";
+	}
+
+	unsigned char* imgEnd = stbi_load(nameImageEnd.c_str(), &widthEnd, &heightEnd, &channelsEnd, 0);
+	if (imgEnd == nullptr) {
+		cerr << "Error cargando la imagen final\n";
+	}
 
 	system("cls");
 
-	if (GenerateImages(imgInit, imgEnd) == 0)
+	if (GenerateImages(imgInit, imgEnd, widthInit, heightInit, channelsInit) == 0)
 	{
 		std::cout << "Imágenes creadas" << endl << endl;
 		std::cout << "            Presione cualquier tecla para continuar..." << endl;
@@ -275,24 +184,6 @@ void CreateImages() {
 
 	else
 		std::cout << "Hubo un error al crear las imágenes";
-}
-
-void CreateVideo() {
-	CreateFolder(videoOutputFolderName);
-
-	Mat imgInit = imread(pathProgram + "/" + imagesInputFolderName + "/" + nameImgInit);
-	Mat imgEnd = imread(pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd);
-
-	system("cls");
-	if (GenerateVideo(imgInit, imgEnd) == 0)
-	{
-		std::cout << "Video creado" << endl << endl;
-		std::cout << "            Presione cualquier tecla para continuar..." << endl;
-		_getch();
-		system("cls");
-	}
-	else
-		std::cout << "no se pudo crear el video";
 }
 
 string SelectImage(string title, vector<string> files) {
@@ -518,7 +409,7 @@ int MenuSelectImages() {
 }
 
 
-void PrintOptions(int posMenu, vector<String> options) {
+void PrintOptions(int posMenu, vector<string> options) {
 	system("cls");
 	for (int op = 0; op < options.size(); op++) {
 		if (op == posMenu)
@@ -590,7 +481,7 @@ void PrintOptions(int posMenu, vector<String> options) {
 }
 
 
-void menu(int posMenu, vector<String> options) {
+void menu(int posMenu, vector<string> options) {
 	bool exit = false;
 	PrintOptions(posMenu, options);
 	while (!exit) {
@@ -873,7 +764,7 @@ void menu(int posMenu, vector<String> options) {
 				PrintOptions(posMenu, options);
 				break;
 			case 5:
-				CreateVideo();
+				/*CreateVideo();*/
 				posMenu = 0;
 				PrintOptions(posMenu, options);
 				break;
@@ -897,7 +788,7 @@ int main()
 	SetConsoleOutputCP(CP_UTF8);
 	
 	int posMenu = 0;
-	vector<String> options = { "Cantidad de procesos", "Seleccionar imágenes", "Cambiar fps", "Cambiar duración", "Crear imágenes", "Crear video", "Salir" };
+	vector<string> options = { "Cantidad de procesos", "Seleccionar imágenes", "Cambiar fps", "Cambiar duración", "Crear imágenes", "Crear video (deshabilitado)", "Salir" };
 
 	
 	system("cls");

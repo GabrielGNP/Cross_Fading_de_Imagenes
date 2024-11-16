@@ -1,7 +1,4 @@
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/opencv.hpp>
+
 
 #include <iostream>
 #include <cstdlib>
@@ -18,11 +15,18 @@
 
 #include <chrono> // Para medir el tiempo
 
-using namespace cv;
+
+// Para stb
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define _CRT_SECURE_NO_WARNINGS
+#include "stb_image_write.h"
+
+
+
 using namespace std;
 namespace fs = std::filesystem;
-
-
 
 
 // Parámetros
@@ -93,18 +97,13 @@ void CreateFolder(std::string folder) {
 	}
 }
 
-// ========= Mostramos la imagen =========
-void showImage(Mat img) {
-	namedWindow("First OpenCV Application", WINDOW_AUTOSIZE);
-	imshow("First OpenCV Application", img);
-	moveWindow("First OpenCV Application", 0, 45);
-	waitKey(0);
-	destroyAllWindows();
-}
 
-int GenerateImages(Mat imgInit, Mat imgEnd) {
+
+//int GenerateImages(Mat imgInit, Mat imgEnd) {
+int GenerateImages(unsigned char* imgInit, unsigned char* imgEnd, int widthInit, int heightInit, int channelsInit) {
 	int frames = fps * duration; // cantidad de frames totales
-	vector<Mat> listImages;
+	int imgSize = widthInit * heightInit * channelsInit;
+
 	system("cls");
 	gotoxy(0, 1);
 	std::cout << "<";
@@ -115,31 +114,28 @@ int GenerateImages(Mat imgInit, Mat imgEnd) {
 	auto start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
 	for (int i = 0; i < frames; ++i) {
 		float P = static_cast<float>(i) / frames;
-		Mat result = imgInit.clone();
-		/*addWeighted(imgInit, 1 - P, imgEnd, P, 0.0, result);*/ // función para crear las imagenes.
 
-		 // Aplicar cross-fading manualmente en cada píxel
-		for (int y = 0; y < imgInit.rows; ++y) {
-			for (int x = 0; x < imgInit.cols; ++x) {
-				Vec3b pixelInit = imgInit.at<Vec3b>(y, x);
-				Vec3b pixelEnd = imgEnd.at<Vec3b>(y, x);
-				Vec3b& pixelResult = result.at<Vec3b>(y, x);
+		unsigned char* imgResult = new unsigned char[imgSize];
 
-				pixelResult[0] = static_cast<uchar>(pixelInit[0] * (1 - P) + pixelEnd[0] * P); // Canal azul
-				pixelResult[1] = static_cast<uchar>(pixelInit[1] * (1 - P) + pixelEnd[1] * P); // Canal verde
-				pixelResult[2] = static_cast<uchar>(pixelInit[2] * (1 - P) + pixelEnd[2] * P); // Canal rojo
-			}
+
+		for (int i = 0; i < imgSize; i += channelsInit) {
+
+			imgResult[i] = ((int)imgInit[i] * (1 - P) + (int)imgEnd[i] * P); // Canal rojo
+			imgResult[i + 1] = ((int)imgInit[i + 1] * (1 - P) + (int)imgEnd[i + 1] * P); // Canal verde
+			imgResult[i + 2] = ((int)imgInit[i + 2] * (1 - P) + (int)imgEnd[i + 2] * P); // Canal azul
 		}
+		
+		string name = "images_Output/output_" + std::to_string(i) + ".png";
+		stbi_write_png(name.c_str(), widthInit, heightInit, channelsInit, imgResult, widthInit * channelsInit);
+		
 
-		/*std::string fileName = imagesOutputFolderName+"/frame_" + std::to_string(i) + ".jpg";
-		imwrite(fileName, result);*/
-		listImages.push_back(result);
 		if (int(P) % 2 == 0) {
 			gotoxy(int(P * 50) + 1, 1);
 			std::cout << "=";
 		}
 		gotoxy(24, 2);
 		cout << int(P * 100) << "%";
+		stbi_image_free(imgResult);
 	}
 	gotoxy(24, 2);
 	cout << "100%";
@@ -149,80 +145,11 @@ int GenerateImages(Mat imgInit, Mat imgEnd) {
 	auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
 	cout << "Tiempo tardado en generar las imagenes: " << durationms.count() << "ms" << endl;
 	cout << "Tiempo tardado en generar las imagenes: " << durationsec.count() << "seg" << endl;
-	int cont = 0;
-	for (int i = 0; i < listImages.size(); i++)
-	{
-		std::string fileName = imagesOutputFolderName + "/frame_" + std::to_string(i) + ".jpg";
-		imwrite(fileName, listImages[i]);
-		//listImages.erase(listImages.begin());  // Elimina el primer elemento del vector
-	}
-	listImages.clear();
-	
+
+	stbi_image_free(imgInit); // Libera la memoria cuando termines
+	stbi_image_free(imgEnd);
 	
 	std::cout << std::endl;
-
-	return 0;
-}
-
-int GeneratedVideo(Mat imgInit, Mat imgEnd) {
-	int frames = fps * duration; // cantidad de frames totales
-	Size frameSize = imgInit.size();
-
-	// Inicializar el VideoWriter
-	VideoWriter video(videoOutputFolderName+"/output_video.avi", VideoWriter::fourcc('M', 'J', 'P', 'G'), fps, frameSize);
-
-	if (!video.isOpened()) {
-		std::cerr << "Error al abrir el archivo de video" << std::endl;
-		return -1;
-	}
-
-	system("cls");
-	gotoxy(0, 1);
-	std::cout << "<";
-	gotoxy(51, 1);
-	std::cout << ">";
-	gotoxy(24, 2);
-	cout << int(0 * 100) << "%";
-	auto start = std::chrono::high_resolution_clock::now(); // <========= toma el tiempo actual para el inicio del cronometro
-	for (int i = 0; i <= frames; ++i) {
-		float P = static_cast<float>(i) / frames;
-		Mat result = imgInit.clone();
-		/*addWeighted(imgInit, 1 - P, imgEnd, P, 0.0, result);*/ // función para crear las imagenes.
-
-		 // Aplicar cross-fading manualmente en cada píxel
-		for (int y = 0; y < imgInit.rows; ++y) {
-			for (int x = 0; x < imgInit.cols; ++x) {
-				Vec3b pixelInit = imgInit.at<Vec3b>(y, x);
-				Vec3b pixelEnd = imgEnd.at<Vec3b>(y, x);
-				Vec3b& pixelResult = result.at<Vec3b>(y, x);
-
-				pixelResult[0] = static_cast<uchar>(pixelInit[0] * (1 - P) + pixelEnd[0] * P); // Canal azul
-				pixelResult[1] = static_cast<uchar>(pixelInit[1] * (1 - P) + pixelEnd[1] * P); // Canal verde
-				pixelResult[2] = static_cast<uchar>(pixelInit[2] * (1 - P) + pixelEnd[2] * P); // Canal rojo
-			}
-		}
-
-		video.write(result);
-		
-		if (int(P) % 2 == 0) {
-			gotoxy(int(P * 50) + 1, 1);
-			std::cout << "=";
-		}
-		gotoxy(24, 2);
-		cout << int(P * 100) << "%";
-	}
-	gotoxy(24, 2);
-	cout << "100%";
-	cout << endl;
-	auto end = std::chrono::high_resolution_clock::now();// <========= toma el tiempo actual para el fin del cronometro
-	auto durationms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
-	auto durationsec = std::chrono::duration_cast<std::chrono::seconds>(end - start); // <======== calcula el tiempo en función del final y el inicio
-	cout << "Tiempo tardado en generar el video: " << durationms.count() << "ms" << endl;
-	cout << "Tiempo tardado en generar el video: " << durationsec.count() << "seg" << endl;
-	std::cout << std::endl;
-	
-	// Liberar el archivo de video
-	video.release();
 
 	return 0;
 }
@@ -448,10 +375,24 @@ int MenuSelectImages() {
 void CreateImages() {
 	CreateFolder(imagesOutputFolderName);
 
-	Mat imgInit = imread(pathProgram + "/" + imagesInputFolderName + "/" + nameImgInit);
-	Mat imgEnd = imread(pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd);
+	/*Mat imgInit = imread(pathProgram + "/" + imagesInputFolderName + "/" + nameImgInit);
+	Mat imgEnd = imread(pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd);*/
+	string nameImageInit = pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd;
+	string nameImageEnd = pathProgram + "/" + imagesInputFolderName + "/" + nameImgEnd;
 
-	if (GenerateImages(imgInit, imgEnd) == 0)
+	int widthInit = 0, heightInit = 0, channelsInit = 0;
+	int widthEnd = 0, heightEnd = 0, channelsEnd = 0;
+	unsigned char* imgInit = stbi_load(nameImageInit.c_str(), &widthInit, &heightInit, &channelsInit, 0);
+	if (imgInit == nullptr) {
+		cerr << "Error cargando la imagen inicial\n";
+	}
+
+	unsigned char* imgEnd = stbi_load(nameImageEnd.c_str(), &widthEnd, &heightEnd, &channelsEnd, 0);
+	if (imgEnd == nullptr) {
+		cerr << "Error cargando la imagen final\n";
+	}
+
+	if (GenerateImages(imgInit, imgEnd, widthInit, heightInit, channelsInit) == 0)
 	{
 		std::cout << "Imágenes creadas" << endl << endl;
 		std::cout << "            Presione cualquier tecla para continuar..." << endl;
@@ -482,7 +423,7 @@ void CreateVideo() {
 		std::cout << "no se pudo crear el video";
 }
 
-void PrintOptions(int posMenu, vector<String> options) {
+void PrintOptions(int posMenu, vector<string> options) {
 	system("cls");
 	for (int op = 0; op < options.size(); op++) {
 		if (op == posMenu)
@@ -535,7 +476,7 @@ void PrintOptions(int posMenu, vector<String> options) {
 	SetColor(7, 0);
 }
 
-void menu(int posMenu, vector<String> options) {
+void menu(int posMenu, vector<string> options) {
 	bool exit = false;
 	PrintOptions(posMenu, options);
 	while (!exit) {
@@ -760,7 +701,7 @@ void menu(int posMenu, vector<String> options) {
 				PrintOptions(posMenu, options);
 				break;
 			case 4:
-				CreateVideo();
+				/*CreateVideo();*/
 				posMenu = 0;
 				PrintOptions(posMenu, options);
 				break;
@@ -780,7 +721,7 @@ int main()
 {
 	SetConsoleOutputCP(CP_UTF8);
 	int posMenu = 0;
-	vector<String> options = { "Seleccionar imágenes","Cambiar fps", "Cambiar duración", "Crear imágenes", "Crear video", "Salir" };
+	vector<string> options = { "Seleccionar imágenes","Cambiar fps", "Cambiar duración", "Crear imágenes", "Crear video (deshabilitado)", "Salir" };
 
 	system("cls");
 	menu(posMenu, options);
